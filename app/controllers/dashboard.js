@@ -15,14 +15,14 @@ export default Controller.extend({
     selectedProduct: null,
     selectedProject: null,
     chartData: null,
-    color:["rgba(255,99,132,0.2)", "rgba(179,181,198,0.2)"],
+    color: ["rgba(10, 148, 27, 0.5)", "rgba(7, 25, 234, 0.5)", "rgba(234, 56, 7, 0.5)"],
     radarData: {
         labels: ["Africa", "Asia", "Europe", "Latin America", "North America"],
         datasets: [
             {
                 label: "1950",
                 fill: true,
-                backgroundColor: "rgba(179,181,198,0.2)",
+                backgroundColor: "#4cb764",
                 borderColor: "rgba(179,181,198,1)",
                 pointBorderColor: "#fff",
                 pointBackgroundColor: "rgba(179,181,198,1)",
@@ -30,7 +30,7 @@ export default Controller.extend({
             }, {
                 label: "2050",
                 fill: true,
-                backgroundColor: "rgba(255,99,132,0.2)",
+                backgroundColor: "#08c",
                 borderColor: "rgba(255,99,132,1)",
                 pointBorderColor: "#fff",
                 pointBackgroundColor: "rgba(255,99,132,1)",
@@ -50,7 +50,7 @@ export default Controller.extend({
     csg: computed('model.@each', function () {
         let results = ["All"];
         // let names = get(this, 'model') ? get(this, 'model').objectAt(0).map(cn => cn.name) : [];
-        if (get(this, 'model')) {
+        if (get(this, 'model').objectAt(0)) {
             get(this, 'model').objectAt(0).forEach(csg => {
                 results.push(csg.name);
             })
@@ -60,7 +60,7 @@ export default Controller.extend({
 
     product: computed('model.@each', function () {
         let results = ["All"];
-        if (get(this, 'model')) {
+        if (get(this, 'model').objectAt(1)) {
             get(this, 'model').objectAt(1).forEach(product => {
                 results.push(product.name);
             })
@@ -69,8 +69,13 @@ export default Controller.extend({
     }),
 
     project: computed('model.@each', function () {
-        return get(this, 'model') ? get(this, 'model').objectAt(2).map(cn => cn.name) : [];
+        return get(this, 'model').objectAt(2) ? get(this, 'model').objectAt(2).map(cn => cn.name) : [];
     }),
+
+    // showButton: computed('model.@each', function () {
+    //     // return get(this, 'model').objectAt(2) ? get(this, 'model').objectAt(2).map(cn => cn.name) : [];
+    //     return (this.get("csgName") || this.get('selectedProduct') || this.get('selectedProject') ) && (this.get('timeperiod') ? this.get('timeperiod').length > 0 : ;
+    // }), 
 
     // times: computed('model.@each', function () {
     //     // return get(this, 'model') ? get(this, 'model').objectAt(3).map(cn => cn.name) : [];
@@ -94,8 +99,8 @@ export default Controller.extend({
     urlMaker() {
         // alert(this.search(get(this, "csgName"), this.get('model')[0]).id);
         let csg = get(this, "csgName") ? ((get(this, "csgName") == 'All') ? "-1" : this.search(get(this, "csgName"), this.get('model')[0]).id) : null;
-        let product = get(this, "selectedProduct") ? ((get(this, "selectedProduct") == 'All') ? "-1" : this.search(get(this, "selectedProduct"), this.get('model')[1]).id) : null;
-        let project = get(this, "selectedProject") ? ((get(this, "selectedProject") == 'All') ? "-1" : this.search(get(this, "selectedProject"), this.get('model')[2]).id) : null;
+        let product = get(this, "selectedProduct") ? ((get(this, "selectedProduct") == 'All') ? -1 : this.search(get(this, "selectedProduct"), this.get('model')[1]).id) : null;
+        let project = get(this, "selectedProject") ? ((get(this, "selectedProject") == 'All') ? -1 : this.search(get(this, "selectedProject"), this.get('model')[2]).id) : null;
         // let product = get(this, "selectedProduct") ? ((get(this, "selectedProduct") == 'All') ? "-1" : get(this, "selectedProduct")) : null;
         // let project = get(this, "selectedProject");
 
@@ -111,9 +116,6 @@ export default Controller.extend({
         } else if (isEmpty(csg) && notEmpty(product) && isEmpty(project)) {
             /// /api/product/{productId}/project
             url = `product/${product}/project`;
-        } else if (notEmpty(csg) && notEmpty(product) && isEmpty(project)) {
-            /// /api/csg/{csgId}/product
-            alert("/api/csg/{csgId}/product");
         }
 
         // alert(url);
@@ -137,29 +139,35 @@ export default Controller.extend({
     },
 
     parseChartData(data) {
-         console.log(JSON.stringify("datadatadatadatadatadatadata"));
-         console.log(JSON.stringify(data));
-         let dataSet = [];
-         let labels = [];
+        console.log(JSON.stringify("datadatadatadatadatadatadata"));
+        console.log(JSON.stringify(data));
+        let dataSet = [];
+        let labels = [];
+        let title = "";
 
-         let option = {
+
+
+        data.forEach((d, index) => {
+            let set = {
+                label: d.timePeriod,
+                backgroundColor: get(this, 'color')[index],
+                data: d.metrics.map(d => d.maturity)
+            }
+            dataSet.push(set);
+            if (labels.length == 0) {
+                labels = d.metrics.map(d => d.category);
+            }
+            if (title == "") {
+                title = (d.metrics.length > 0) ? d.metrics[0].title : "_";
+            }
+        });
+
+        let option = {
             title: {
                 display: true,
-                text: 'Distribution in % of world population'
+                text: title
             }
         };
-
-data.forEach((d,index) => {
-    let set = {
-        label: d.timePeriod,
-        backgroundColor: get(this, 'color')[index],
-        data: d.metrics.map(d => d.maturity)
-    }
-    dataSet.push(set);
-    if(labels.length == 0){
-        labels = d.metrics.map(d => d.category);
-    }
-})
 
 
         let chartData = {
@@ -175,7 +183,19 @@ data.forEach((d,index) => {
     actions: {
         csgChange(selectedItem) {
             this.set('csgName', selectedItem);
-            this.send('updateDropDown');
+            // this.send('updateDropDown', "csg");
+            let csg = get(this, "csgName") ? ((get(this, "csgName") == 'All') ? "-1" : this.search(get(this, "csgName"), this.get('model')[0]).id) : null;
+            let product = get(this, "selectedProduct") ? ((get(this, "selectedProduct") == 'All') ? -1 : this.search(get(this, "selectedProduct"), this.get('model')[1]).id) : null;
+            let project = get(this, "selectedProject") ? ((get(this, "selectedProject") == 'All') ? -1 : this.search(get(this, "selectedProject"), this.get('model')[2]).id) : null;
+
+            // if (notEmpty(csg) && notEmpty(product) && isEmpty(project)) {
+            //     //  api/csg/{csgId}/product/{productId}/project
+            //     this.send('updateDropDown', {url: `csg/${csg}/product/${product}/project`, item: "project"});
+            // }
+            if (notEmpty(csg) && notEmpty(product) && notEmpty(project)) {
+                /// /api/product/{productId}/project
+                this.send('updateDropDown', {url: `product/${product}/project`, item: "project"});
+            }
         },
 
         productChange(selectedItem) {
@@ -188,11 +208,11 @@ data.forEach((d,index) => {
             this.send('updateDropDown');
         },
 
-        async updateDropDown() {
+        async updateDropDown(caller = null) {
             // if (this.csgName) {
             //     this.set('showForCsg', true);
             // }
-            let url = this.urlMaker();
+            let url = caller || this.urlMaker();
             await fetch(this.baseUrl + url.url).then((res) => {
                 return res.json()
             }).then(data => {
@@ -214,22 +234,22 @@ data.forEach((d,index) => {
             let product = get(this, "selectedProduct") ? ((get(this, "selectedProduct") == 'All') ? "-1" : this.search(get(this, "selectedProduct"), this.get('model')[1]).id) : null;
             let project = get(this, "selectedProject") ? ((get(this, "selectedProject") == 'All') ? "-1" : this.search(get(this, "selectedProject"), this.get('model')[2]).id) : null;
             let timeperiod = this.get('timeLine');
-                await fetch(this.baseUrl + "query", {
-                    method: 'POST',
-                    headers: {
-                      'Accept': 'application/json',
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        "csg": csg || null,
-                        "product": product || null,
-                        "project": project || null,
-                        "timePeriod": timeperiod || []
-                      })
-                  }).then((res) => {
-                    console.log(JSON.stringify(res));
-                    return res.json();
+            await fetch(this.baseUrl + "query", {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "csg": csg || null,
+                    "product": product || null,
+                    "project": project || null,
+                    "timePeriod": timeperiod || []
                 })
+            }).then((res) => {
+                console.log(JSON.stringify(res));
+                return res.json();
+            })
                 .then(data => {
                     this.parseChartData(data);
                 })

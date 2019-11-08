@@ -36,9 +36,12 @@
 </div>
 
 
-{{model.firstObject.name}}
-
 {{#if barData}}
 {{ember-chart type='radar' data=barData options=barOption width=400 height=400}}
 {{ember-chart type='bar' data=barData options=barOption width=400 height=400}}
+
+{{!-- {{else}}
+<div align="center">
+   <h2> No data found :) </h2>
+</div> --}}
 {{/if}}

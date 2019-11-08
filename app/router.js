@@ -8,6 +8,7 @@ const Router = EmberRouter.extend({
 
 Router.map(function() {
   this.route('dashboard');
+  this.route('upload');
 });
 
 export default Router;
