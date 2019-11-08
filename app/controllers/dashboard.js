@@ -86,7 +86,7 @@ export default Controller.extend({
     //         })
     //     }
     //     return results;
-    // }),
+    // }), 
 
     search(nameKey, myArray) {
         for (var i = 0; i < myArray.length; i++) {
@@ -194,7 +194,7 @@ export default Controller.extend({
             // }
             if (notEmpty(csg) && notEmpty(product) && notEmpty(project)) {
                 /// /api/product/{productId}/project
-                this.send('updateDropDown', {url: `product/${product}/project`, item: "project"});
+                this.send('updateDropDown', { url: `product/${product}/project`, item: "project" });
             }
         },
 
@@ -241,8 +241,8 @@ export default Controller.extend({
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    "csg": csg || null,
-                    "product": product || null,
+                    "csg": +csg || null,
+                    "product": +product || null,
                     "project": project || null,
                     "timePeriod": timeperiod || []
                 })
